@@ -1,0 +1,16 @@
+title = "halopsa-mcp-server gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documentation and example placeholders"
+paths = [
+  '''docs/''',
+  '''\.github/workflows/''',
+]
+regexes = [
+  '''replace-me''',
+  '''your-tenant''',
+  '''halo\.attuned\.it''',
+]
