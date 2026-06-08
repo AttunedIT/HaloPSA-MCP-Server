@@ -14,6 +14,7 @@ Track what billing/accounting coverage exists in the MCP server today, what the 
 
 - Public docs portal: [usehalo.com/swagger](https://usehalo.com/swagger/) (HaloAPI Docs)
 - Live OpenAPI 3.0.1 spec (auth required): `{HALOPSA_BASE_URL}/api/swagger/v2/swagger.json`
+- Offline snapshots + drift report: [`docs/reference/`](reference/) (regenerate with `python3 scripts/diff-openapi.py`)
 - As of 2026-06-08 on `halo.attuned.it`: **952 paths**, **91 billing-related base resources**, **7 covered** by MCP
 
 ---
