@@ -182,6 +182,8 @@ export interface HaloAppointment {
   agent_id?: number;
   ticket_id?: number;
   client_id?: number;
+  is_task?: boolean;
+  complete_status?: number;
   [key: string]: unknown;
 }
 

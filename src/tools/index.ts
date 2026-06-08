@@ -23,6 +23,7 @@ import { registerCategoryTools } from "./categories.js";
 import { registerWorkflowTools } from "./workflows.js";
 import { registerServiceTools } from "./services.js";
 import { registerRunbookTools } from "./runbooks.js";
+import { registerTodoTools } from "./todos.js";
 
 export function registerAllTools(
   server: McpServer,
@@ -68,4 +69,7 @@ export function registerAllTools(
 
   // Phase - Integration Runbooks
   registerRunbookTools(server, client);
+
+  // Phase - Ticket To-Do Lists
+  registerTodoTools(server, client);
 }
