@@ -197,4 +197,177 @@ export function registerInvoiceTools(
       return errorResult(error);
     }
   });
+
+  server.registerTool("halo_update_invoice_lines", {
+    title: "Update Invoice Lines",
+    description:
+      "Update line items on a HaloPSA invoice. POSTs to /Invoice/updatelines with InvoiceDetail rows; each line must include ihid (set automatically from invoice_id). Include line id to update an existing row; omit id to add a new line.",
+    inputSchema: {
+      invoice_id: z.number().describe("Invoice header ID (ihid on each line)"),
+      lines: z
+        .array(
+          z
+            .object({
+              id: z.number().optional().describe("Existing line id to update"),
+              item_code: z.string().optional(),
+              item_shortdescription: z.string().optional(),
+              item_longdescription: z.string().optional(),
+              qty_order: z.number().optional(),
+              unit_price: z.number().optional(),
+              tax_code: z.string().optional(),
+              _itemid: z.number().optional().describe("Catalog item ID"),
+              ticket_id: z.number().optional(),
+            })
+            .passthrough()
+        )
+        .min(1)
+        .describe("Line items to create or update"),
+    },
+  }, async (args) => {
+    try {
+      const payload = args.lines.map((line) => ({
+        ...line,
+        ihid: args.invoice_id,
+      }));
+
+      const result = await client.post<Record<string, unknown> | Record<string, unknown>[]>(
+        "/Invoice/updatelines",
+        payload
+      );
+      const rows = Array.isArray(result) ? result : [result];
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                invoice_id: args.invoice_id,
+                lines_updated: rows.length,
+                lines: rows.map((l) => ({
+                  id: l.id,
+                  item_code: l.item_code,
+                  item_shortdescription: l.item_shortdescription,
+                  qty_order: l.qty_order,
+                  unit_price: l.unit_price,
+                  net_amount: l.net_amount,
+                })),
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    } catch (error) {
+      return errorResult(error);
+    }
+  });
+
+  server.registerTool("halo_void_invoice", {
+    title: "Void Invoice",
+    description:
+      "Void a HaloPSA invoice by ID. Irreversible billing action — requires confirm=true.",
+    inputSchema: {
+      invoice_id: z.number().describe("The invoice ID to void"),
+      confirm: z
+        .boolean()
+        .describe("Must be true to confirm voiding the invoice"),
+    },
+  }, async (args) => {
+    if (args.confirm !== true) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "You must set confirm: true to void an invoice. This action is irreversible.",
+          },
+        ],
+      };
+    }
+    try {
+      const result = await client.post<Record<string, unknown>>(
+        `/Invoice/${args.invoice_id}/void`,
+        {}
+      );
+      const row = Array.isArray(result) ? result[0] : result;
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                invoice_id: args.invoice_id,
+                voided: row?.voided ?? true,
+                invoice_number: row?.invoicenumber,
+                status: row?.status,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    } catch (error) {
+      return errorResult(error);
+    }
+  });
+
+  server.registerTool("halo_get_invoice_pdf", {
+    title: "Get Invoice PDF",
+    description:
+      "Generate invoice print output for a HaloPSA invoice. Returns pdf_attachment_id and printhtml from POST /Invoice/PDF/{id}. Use pdf_attachment_id to retrieve the binary PDF from Halo attachments if needed.",
+    inputSchema: {
+      invoice_id: z.number().describe("The invoice ID"),
+      include_html: z
+        .boolean()
+        .optional()
+        .describe("Include printhtml in the response (default true)"),
+      max_html_chars: z
+        .number()
+        .optional()
+        .describe("Truncate printhtml to this length (default 50000)"),
+    },
+  }, async (args) => {
+    try {
+      const result = await client.post<Record<string, unknown>>(
+        `/Invoice/PDF/${args.invoice_id}`,
+        {}
+      );
+      const row = Array.isArray(result) ? result[0] : result;
+      const includeHtml = args.include_html ?? true;
+      const maxChars = args.max_html_chars ?? 50_000;
+      let printhtml = row?.printhtml as string | undefined;
+      let html_truncated = false;
+      if (includeHtml && typeof printhtml === "string" && printhtml.length > maxChars) {
+        printhtml = printhtml.slice(0, maxChars);
+        html_truncated = true;
+      }
+
+      const summary: Record<string, unknown> = {
+        invoice_id: row?.id ?? args.invoice_id,
+        invoice_number: row?.invoicenumber,
+        client_name: row?.client_name,
+        total: row?.total,
+        amountdue: row?.amountdue,
+        pdf_attachment_id: row?.pdf_attachment_id,
+        voided: row?.voided,
+      };
+      if (includeHtml) {
+        summary.printhtml = printhtml ?? null;
+        summary.html_truncated = html_truncated;
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(summary, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return errorResult(error);
+    }
+  });
 }
