@@ -104,7 +104,7 @@ Exact query param combinations for child-task listing should be validated agains
 
 ### `halo_kanban_status`
 
-- **Purpose:** Inspect mirror without calling Halo (optional light Halo ping later).
+- **Purpose:** Inspect local mirror metadata without calling Halo.
 - **Input:** `workspace_path: string`; optional `project_id`.
 - **Output:** active project id, summary, `pulled_at`, card count, column map, mirror path.
 
@@ -275,7 +275,7 @@ halo_kanban_pull({ project_id, workspace_path })
 
 | File | Change |
 | --- | --- |
-| `src/tools/kanban.ts` | Register the five/six kanban tools |
+| `src/tools/kanban.ts` | Register the six kanban tools |
 | `src/tools/kanban-mirror.ts` (or similar) | Board/card serialize, slug map, atomic write, settings merge |
 | `src/tools/index.ts` | `registerKanbanTools` |
 | `README.md` | Document kanban tools + mirror layout |
