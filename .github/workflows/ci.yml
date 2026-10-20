@@ -28,6 +28,9 @@ jobs:
       - name: TypeScript build
         run: npm run build
 
+      - name: Unit tests
+        run: npm test
+
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest
