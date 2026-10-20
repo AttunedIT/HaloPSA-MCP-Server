@@ -1,6 +1,13 @@
+import { createRequire } from "node:module";
 import type { HaloConfig } from "../config.js";
 import type { OAuthTokenResponse, HaloListResponse } from "./types.js";
 import { extractListResponse } from "./types.js";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../../package.json") as { version: string };
+
+/** Sent on every HaloPSA request, including the OAuth token call. */
+export const HALO_USER_AGENT = `attunedIT-HaloPSA-MCP/${version}`;
 
 interface CachedToken {
   accessToken: string;
@@ -29,6 +36,14 @@ export class HaloApiClient {
     this.config = config;
   }
 
+  /** Shared headers for every outbound Halo fetch. User-Agent cannot be overridden. */
+  private buildHeaders(extra: Record<string, string> = {}): Record<string, string> {
+    return {
+      ...extra,
+      "User-Agent": HALO_USER_AGENT,
+    };
+  }
+
   private async authenticate(): Promise<string> {
     // Return cached token if still valid (with 60s buffer)
     if (
@@ -51,7 +66,9 @@ export class HaloApiClient {
     try {
       response = await fetch(tokenUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: this.buildHeaders({
+          "Content-Type": "application/x-www-form-urlencoded",
+        }),
         body: body.toString(),
         signal: AbortSignal.timeout(this.config.timeoutMs),
       });
@@ -95,10 +112,10 @@ export class HaloApiClient {
     try {
       response = await fetch(url.toString(), {
         method: "GET",
-        headers: {
+        headers: this.buildHeaders({
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-        },
+        }),
         signal: AbortSignal.timeout(this.config.timeoutMs),
       });
     } catch (error) {
@@ -142,10 +159,10 @@ export class HaloApiClient {
     try {
       response = await fetch(url, {
         method: "POST",
-        headers: {
+        headers: this.buildHeaders({
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(this.config.timeoutMs),
       });
@@ -171,10 +188,10 @@ export class HaloApiClient {
     try {
       response = await fetch(url, {
         method: "DELETE",
-        headers: {
+        headers: this.buildHeaders({
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-        },
+        }),
         signal: AbortSignal.timeout(this.config.timeoutMs),
       });
     } catch (error) {
